@@ -25,7 +25,10 @@ spec:
         type: infra
     spec:
       tolerations:
-      - operator: Exists
+        - effect: NoSchedule
+          operator: Exists
+        - key: CriticalAddonsOnly
+          operator: Exists
       affinity:
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
@@ -44,6 +47,8 @@ spec:
           - /kube-ovn/start-controller.sh
           args:
           - --default-cidr={{ kube_pods_subnet }}
+          - --service-cluster-ip-range={{ kube_service_addresses }}
+          - --node-switch-cidr={{ kube_ovn_node_switch_cidr }}
           - --pod-nic-type=veth-pair
           - --enable-lb=true
           - --enable-np=true
@@ -71,15 +76,13 @@ spec:
           readinessProbe:
             exec:
               command:
-                - bash
-                - /kube-ovn/kube-ovn-controller-healthcheck.sh
+                - /kube-ovn/kube-ovn-controller-healthcheck
             periodSeconds: 3
             timeoutSeconds: 45
           livenessProbe:
             exec:
               command:
-                - bash
-                - /kube-ovn/kube-ovn-controller-healthcheck.sh
+                - /kube-ovn/kube-ovn-controller-healthcheck
             initialDelaySeconds: 300
             periodSeconds: 7
             failureThreshold: 5
@@ -122,7 +125,12 @@ spec:
         type: infra
     spec:
       tolerations:
-      - operator: Exists
+        - effect: NoSchedule
+          operator: Exists
+        - effect: NoExecute
+          operator: Exists
+        - key: CriticalAddonsOnly
+          operator: Exists
       priorityClassName: system-cluster-critical
       serviceAccountName: ovn
       hostNetwork: true
@@ -186,6 +194,7 @@ spec:
               - 127.0.0.1
               - "10665"
           periodSeconds: 3
+          timeoutSeconds: 5
         livenessProbe:
           exec:
             command:
@@ -196,6 +205,7 @@ spec:
               - "10665"
           initialDelaySeconds: 30
           periodSeconds: 7
+          timeoutSeconds: 5
           failureThreshold: 5
         resources:
           requests:
@@ -251,8 +261,6 @@ spec:
         component: network
         type: infra
     spec:
-      tolerations:
-      - operator: Exists
       serviceAccountName: ovn
       hostPID: true
       containers:
@@ -370,7 +378,12 @@ spec:
         type: infra
     spec:
       tolerations:
-      - operator: Exists
+        - effect: NoSchedule
+          operator: Exists
+        - effect: NoExecute
+          operator: Exists
+        - key: CriticalAddonsOnly
+          operator: Exists
       affinity:
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
@@ -380,6 +393,7 @@ spec:
               topologyKey: kubernetes.io/hostname
       priorityClassName: system-cluster-critical
       serviceAccountName: ovn
+      hostNetwork: true
       containers:
         - name: kube-ovn-monitor
           image: {{ kube_ovn_container_image_repo }}:{{ kube_ovn_container_image_tag }}

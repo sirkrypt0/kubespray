@@ -72,6 +72,7 @@ rules:
       - networks
       - security-groups
       - security-groups/status
+      - htbqoses
     verbs:
       - "*"
   - apiGroups:
@@ -218,7 +219,12 @@ spec:
         type: infra
     spec:
       tolerations:
-        - operator: Exists
+        - effect: NoSchedule
+          operator: Exists
+        - effect: NoExecute
+          operator: Exists
+        - key: CriticalAddonsOnly
+          operator: Exists
       affinity:
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
@@ -284,7 +290,7 @@ spec:
               command:
                 - bash
                 - /kube-ovn/ovn-is-leader.sh
-            periodSeconds: 3
+            periodSeconds: 15
             timeoutSeconds: 45
           livenessProbe:
             exec:
@@ -292,7 +298,7 @@ spec:
                 - bash
                 - /kube-ovn/ovn-healthcheck.sh
             initialDelaySeconds: 30
-            periodSeconds: 7
+            periodSeconds: 15
             failureThreshold: 5
             timeoutSeconds: 45
       nodeSelector:
@@ -350,7 +356,12 @@ spec:
         type: infra
     spec:
       tolerations:
-        - operator: Exists
+        - effect: NoSchedule
+          operator: Exists
+        - effect: NoExecute
+          operator: Exists
+        - key: CriticalAddonsOnly
+          operator: Exists
       priorityClassName: system-cluster-critical
       serviceAccountName: ovn
       hostNetwork: true
