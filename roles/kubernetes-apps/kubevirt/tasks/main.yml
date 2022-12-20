@@ -1,0 +1,56 @@
+---
+
+- name: Kubevirt | Create addon dir
+  file:
+    path: "{{ kube_config_dir }}/addons/kubevirt"
+    state: directory
+    owner: root
+    group: root
+    mode: 0755
+  when:
+    - inventory_hostname == groups['kube_control_plane'][0]
+
+- name: Kubevirt | Templates list
+  set_fact:
+    kubevirt_templates:
+      - name: kubevirt-operator
+        file: kubevirt-operator.yml
+        url: "https://github.com/kubevirt/kubevirt/releases/download/{{ kubevirt_version }}/kubevirt-operator.yaml"
+      - name: kubevirt-cr
+        file: kubevirt-cr.yml
+        url: "https://github.com/kubevirt/kubevirt/releases/download/{{ kubevirt_version }}/kubevirt-cr.yaml"
+
+- name: Kubevirt | Create manifests
+  get_url:
+    url: "{{ item.url }}"
+    dest: "{{ kube_config_dir }}/addons/kubevirt/{{ item.file }}"
+    mode: 0644
+  with_items: "{{ kubevirt_templates }}"
+  register: kubevirt_manifests
+  when:
+    - inventory_hostname == groups['kube_control_plane'][0]
+
+- name: Kubevirt | Apply operator
+  kube:
+    kubectl: "{{ bin_dir }}/kubectl"
+    filename: "{{ kube_config_dir }}/addons/kubevirt/kubevirt-operator.yml"
+    state: "latest"
+    # Wait to make sure that the files are applied after the others are created
+    wait: true
+  when:
+    - inventory_hostname == groups['kube_control_plane'][0]
+
+- name: Kubevirt | Wait until CRDs are created
+  command: >
+    {{ kubectl }} wait --for condition=established crd/kubevirts.kubevirt.io --timeout=60s
+  when:
+    - inventory_hostname == groups['kube_control_plane'][0]
+
+- name: Kubevirt | Apply custom resource
+  kube:
+    kubectl: "{{ bin_dir }}/kubectl"
+    filename: "{{ kube_config_dir }}/addons/kubevirt/kubevirt-cr.yml"
+    state: "latest"
+    wait: true
+  when:
+    - inventory_hostname == groups['kube_control_plane'][0]

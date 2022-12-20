@@ -398,6 +398,9 @@ metallb_speaker_image_repo: "{{ quay_image_repo }}/metallb/speaker"
 metallb_controller_image_repo: "{{ quay_image_repo }}/metallb/controller"
 metallb_version: v0.13.9
 
+kubevirt_image_repo: "{{ quay_image_repo }}/kubevirt/virt-operator"
+kubevirt_version: v1.1.1
+
 downloads:
   netcheck_server:
     enabled: "{{ deploy_netchecker }}"
@@ -1163,6 +1166,15 @@ downloads:
     sha256: "{{ metallb_controller_digest_checksum | default(None) }}"
     groups:
     - kube_control_plane
+
+  kubevirt_operator:
+    enabled: "{{ kubevirt_enabled }}"
+    container: true
+    repo: "{{ kubevirt_image_repo }}"
+    tag: "{{ kubevirt_version }}"
+    sha256: "{{ kubevirt_operator_digest_checksum | default(None) }}"
+    groups:
+    - kube_node
 
   yq:
     enabled: "{{ argocd_enabled }}"
